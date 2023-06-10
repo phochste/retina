@@ -770,6 +770,15 @@ domain(A, true, B) :-
     conj_list(B, D).
 domain(_, B, B).
 
+% makevars(+List,-NewList,?Graffiti)
+%   Transform a pso-predicate list into a new pso-predicate list with 
+%   all graffiti filled in. Possible graffiti in the 
+%   predicate position will be replaced by an exopred predicate.
+%   E.g. 
+%      makevars( '<urn:example.org:is>'('_:A',42), Y , ['_:A'] )
+%      Y = '<urn:example.org:is>'(_A,42)
+%      makevars( '_:B'('_:A',42), Y , ['_:A','_:B'] ) 
+%      Y = 'exopred(_A,42,_B)' 
 makevars(A, B, C) :-
     list_to_set(C, D),
     findvars(D, G),

@@ -872,10 +872,19 @@ includes(X, [Y|Z]) :-
     member(Y, X),
     includes(X, Z).
 
+% couple(?List1, ?List2, ?CoupleList)
+%  True if CoupleList is a pair wise combination of elements 
+%  of List1 and List2.
+%  Example: couple([1,2,3],['A','B','C'],[[1,'A'],[2,'B'],[3,'C'])
 couple([], [], []).
 couple([A|B], [C|D], [[A, C]|E]) :-
     couple(B, D, E).
 
+% genlabel(+OldString,-NewString)
+%  For each invocation of this built-in a new label will
+%  be created for OldString by appending it with an ever
+%  increasing '_<Number>'
+%  Example: genlabel('A','A_1'),genlabel('A','A_2'),...
 genlabel(A, B) :-
     (   bb_get(A, C)
     ->  D is C+1,
@@ -885,6 +894,9 @@ genlabel(A, B) :-
         taglabel(A, 1, B)
     ).
 
+% taglabel(+String,+Number,-Tag)
+%   Tag is the result of appending '_<Number>' to '<String>'
+%   Example: taglabel('A',1,'A_1')
 taglabel(A, B, C) :-
     atom_chars(A, D),
     number_chars(B, E),

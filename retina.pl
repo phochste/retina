@@ -54,10 +54,10 @@ run :-
 
 % relabel_graffiti
 %   Replace all graffiti in negative, positiv, neutral and query
-%   surfaces with a new generated value.
+%   surfaces with a new generated variables.
 %   E.g. (_:A) log:onNegativeSurface { .. _:A .. }
 %   becomes
-%   (_:A_1) log:onNegativeSurface { .. _:A_1 .. }
+%   (_A_1) log:onNegativeSurface { .. _A_1 .. }
 relabel_graffiti :-
     member(P, ['<http://www.w3.org/2000/10/swap/log#onNegativeSurface>', '<http://www.w3.org/2000/10/swap/log#onNeutralSurface>', '<http://www.w3.org/2000/10/swap/log#onPositiveSurface>', '<http://www.w3.org/2000/10/swap/log#onQuerySurface>']),
     A =.. [P, _, _],
@@ -103,6 +103,7 @@ tr_graffiti(A, B) :-
 forward(Recursion) :-
     (   implies(Prem, Conc),
         Prem,
+        % check if the conclusion Conc is not already defined
         (   Conc = ':-'(C, P)
         ->  \+clause(C, P)
         ;   \+Conc
@@ -358,7 +359,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onQuerySurface>'(V, G),
         makevars(S, I, W)
         ), implies(Q, answer(I))).
 
-%
+%%
 % built-ins
 %
 
@@ -771,6 +772,15 @@ conjify('<http://www.w3.org/2000/10/swap/log#callWithCut>'(A, _), (A, !)) :-
     !.
 conjify(A, A).
 
+% domain(+SubjectList,true,+Domain)
+%   Return true when SubjectList is in the domain of discourse Domain.
+%   E.g.
+%     ['rdfsurfaces/socrates/socrates.pl'].
+%     domain(
+%        ['<http://example.org/ns#Socrates>'],
+%        true,
+%        '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'('<http://example.org/ns#Socrates>','<http://example.org/ns#Human>')
+%     ).
 domain(A, true, B) :-
     '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'(_, _),
     !,
@@ -780,16 +790,18 @@ domain(A, true, B) :-
         D
     ),
     conj_list(B, D).
+% domain(+SubjectList,+Predicate,+Domain)
+%   True when the Predicate is equal to the Domain.
 domain(_, B, B).
 
 % makevars(+List,-NewList,?Graffiti)
 %   Transform a pso-predicate list into a new pso-predicate list with 
 %   all graffiti filled in. Possible graffiti in the 
-%   predicate position will be replaced by an exopred predicate.
+%   predicate position will be replaced by an exopred.
 %   E.g. 
-%      makevars( '<urn:example.org:is>'('_:A',42), Y , ['_:A'] )
+%      makevars( '<urn:example.org:is>'('_:A',42), Y , ['_:A'] ).
 %      Y = '<urn:example.org:is>'(_A,42)
-%      makevars( '_:B'('_:A',42), Y , ['_:A','_:B'] ) 
+%      makevars( '_:B'('_:A',42), Y , ['_:A','_:B'] ). 
 %      Y = 'exopred(_A,42,_B)' 
 makevars(A, B, C) :-
     list_to_set(C, D),
@@ -832,6 +844,10 @@ makevar(A, B, F) :-
     nonvar(Dh),
     B =.. [Dh|Dt].
 
+% findvars(+Predicate,-VarList)
+%   Find all blank node reference in a pso predicate expression.
+%   E.g. findvars('<urn:foo>'('_:A','_:B'),X)
+%        X = ['_:A','_:B']
 findvars(A, B) :-
     atomic(A),
     !,
@@ -854,6 +870,10 @@ findvars(A, B) :-
     A =.. C,
     findvars(C, B).
 
+% find_graffiti(+Predicate,-GraffitiList)
+%   Find all graffiti declaration in a (nested) surface.
+%   E.g. find_graffiti('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(['_:A'],'<urn:foo>'('_:C',2)),X).
+%        X = ['_:A'].
 find_graffiti(A, []) :-
     atomic(A),
     !.
@@ -875,18 +895,27 @@ find_graffiti(A, B) :-
     A =.. C,
     find_graffiti(C, B).
 
+% sum(+ListOfNumbers,-SumOfNumbers)
+%   True when the sum of ListOfNumbers is SumOfNumbers.
+%   E.g. sum([1,2],3).
 sum([], 0) :-
     !.
 sum([A|B], C) :-
     sum(B, D),
     C is A+D.
 
+% product(+ListOfNumbers,-ProductOfNumbers)
+%   True when the product of ListOfNumbers is ProductOfNumbers.
+%   E.g. product([2,4],8).
 product([], 1) :-
     !.
 product([A|B], C) :-
     product(B, D),
     C is A*D.
 
+% includes(?ListA,?ListB)
+%   True when every item of ListB is in ListA
+%   E.g. includes([1,2,[5]],[[5],2]).
 includes(_, []) :-
     !.
 includes(X, [Y|Z]) :-

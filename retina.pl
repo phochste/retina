@@ -202,7 +202,7 @@ within_recursion(R) :-
 % - assert positive surface
 implies('<http://www.w3.org/2000/10/swap/log#onPositiveSurface>'(_, G), G).
 
-% - blow inference fuse
+% - blow inference fuse (negative surface)
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         makevars(G, H, V),
@@ -213,6 +213,8 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         ),
         '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(_, I)
         ), throw(inference_fuse('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G), H))).
+
+% - blow inference fuse (negative triple)
 implies(('<http://www.w3.org/2000/10/swap/log#negativeTriple>'(A, T),
         catch(call(T), _, false)
         ), throw(inference_fuse('<http://www.w3.org/2000/10/swap/log#negativeTriple>'(A, T), T))).
@@ -376,7 +378,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onQuerySurface>'(V, G),
         makevars(S, I, W)
         ), implies(Q, answer(I))).
 
-%%
+%%%
 % built-ins
 %
 

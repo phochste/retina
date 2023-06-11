@@ -203,9 +203,15 @@ within_recursion(R) :-
 implies('<http://www.w3.org/2000/10/swap/log#onPositiveSurface>'(_, G), G).
 
 % - blow inference fuse (negative surface)
+%   Given:
+%       (Graffiti) log:onNegativeSurface {
+%            TripleX
+%       }
+%   If TripleX is true, we can throw an inference fuse
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         makevars(G, H, V),
+        % test if the predicate is true (exists in the database)
         catch(call(H), _, false),
         (   H = '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(_, C)
         ->  I = '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(_, C)
@@ -215,22 +221,52 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         ), throw(inference_fuse('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G), H))).
 
 % - blow inference fuse (negative triple)
+%   Given:
+%       (Graffiti) log:negativeTriple {
+%            TripleX
+%       }
+%   If TripleX is true, we can throw an inference fuse
 implies(('<http://www.w3.org/2000/10/swap/log#negativeTriple>'(A, T),
+        % test if the predicate is true (exists in the database)
         catch(call(T), _, false)
         ), throw(inference_fuse('<http://www.w3.org/2000/10/swap/log#negativeTriple>'(A, T), T))).
 
-% - simplify positive surface
+% - simplify nested positive surface
+%   Given:
+%      (Graffiti) log:onNegativeSurface {
+%          TripleX
+%          (...) log:onPositiveSurface {
+%              TripleY  
+%          }
+%      }
+%   We can remove the positive surfaces and create a negative surface:
+%      (Graffiti) log:onNegativeSurface {
+%          TripleX
+%          TripleY
+%      } 
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
+        % K contains all triples except the nested positive surface
         select('<http://www.w3.org/2000/10/swap/log#onPositiveSurface>'([], H), L, K),
         conj_list(H, D),
+        % add the triples from the nested positive surface to K
         append(K, D, E),
         list_to_set(E, B),
         conj_list(F, B)
+        % conclusion is the simplified negative surface
         ), '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, F)).
 
 % - simplify graffiti
+%   Remove unused graffiti nodes.
+%   Given:
+%      (_:A _:B) log:onNegativeSurface {
+%          _:A a :X .
+%      }
+%   create a
+%      (_:A) log:onNegativeSurface {
+%          _:A a :X .
+%      }
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         findvars(G, U),
@@ -240,10 +276,24 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
             ),
             W
         ),
-        W \= V
+        W \= V 
         ), '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(W, G)).
 
-% - simplify nested negative surfaces
+% - simplify double nested negative surfaces
+%   Given:
+%      (Graffiti) log:onNegativeSurface {
+%          TripleX
+%          () log:onNegativeSurface {
+%               () log:onNegativeSurface {
+%                  TripleY
+%               }
+%          }
+%      }
+%    becomes
+%      (Graffiti) log:onNegativeSurface {
+%          TripleX
+%          TripleY
+%      } 
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),

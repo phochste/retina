@@ -52,7 +52,12 @@ run :-
     ),
     halt(0).
 
-% relabel graffiti
+% relabel_graffiti
+%   Replace all graffiti in negative, positiv, neutral and query
+%   surfaces with a new generated value.
+%   E.g. (_:A) log:onNegativeSurface { .. _:A .. }
+%   becomes
+%   (_:A_1) log:onNegativeSurface { .. _:A_1 .. }
 relabel_graffiti :-
     member(P, ['<http://www.w3.org/2000/10/swap/log#onNegativeSurface>', '<http://www.w3.org/2000/10/swap/log#onNeutralSurface>', '<http://www.w3.org/2000/10/swap/log#onPositiveSurface>', '<http://www.w3.org/2000/10/swap/log#onQuerySurface>']),
     A =.. [P, _, _],
@@ -733,6 +738,10 @@ implies(('<http://www.w3.org/2000/10/swap/log#onQuerySurface>'(V, G),
 %
 % support
 %
+
+% conj_list(?Conjunction,?List).
+%   True if ?List contains all items of the ?Conjunction
+%   E.g. conj_list((1,2,3),[1,2,3])
 conj_list(true, []) :-
     !.
 conj_list(A, [A]) :-
@@ -742,6 +751,9 @@ conj_list(A, [A]) :-
 conj_list((A, B), [A|C]) :-
     conj_list(B, C).
 
+% exopred(?Predicate,?Subject,?Object)
+%    True when an ?Predicate exists that matches ?Preficate(?Subject,?Object)
+%    E.g. exopred(X,'<http://example.org/ns#Alice>', '<http://example.org/ns#Person>').
 exopred(P, S, O) :-
     (   var(P)
     ->  current_predicate(P/2),

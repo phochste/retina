@@ -99,22 +99,30 @@ tr_graffiti(A, B) :-
     makevar(R, O, L),
     B =.. [C, M, O].
 
-% forward chaining
+% forward(+Recursion)
+%   Forward chaining starting with Recursion step 0 until Recursion 
+%   larger than bb_get(limit,Value) (default: Value = -1)
 forward(Recursion) :-
-    (   implies(Prem, Conc),
+    (   % find all implies rules
+        implies(Prem, Conc),
+        % match the premise Prem against the database
         Prem,
         % check if the conclusion Conc is not already defined
         (   Conc = ':-'(C, P)
         ->  \+clause(C, P)
         ;   \+Conc
         ),
+        % create witnesses if needed
         (   Conc \= implies(_, _),
             Conc \= ':-'(_, _)
         ->  labelvars(Conc)
         ;   true
         ),
+        % assert the conclusion
         astep(Conc),
+        % release the brake
         retract(brake),
+        % repeat the process
         false
     ;   brake,
         (   R is Recursion+1,
@@ -132,7 +140,8 @@ forward(Recursion) :-
         forward(Recursion)
     ).
 
-% create witnesses
+% labelvars(+Term)
+%   Create witnesses for a free variables in Term
 labelvars(Term) :-
     (   retract(label(Current))
     ->  true
@@ -141,7 +150,8 @@ labelvars(Term) :-
     numbervars(Term, Current, Next),
     assertz(label(Next)).
 
-% assert step
+% astep(+Term)
+%   Assert +Term or write to the stdout if the Term = answer(Answer)
 astep((A, B)) :-
     !,
     astep(A),
@@ -182,10 +192,17 @@ within_recursion(R) :-
         recursion(R)
     ).
 
-% assert positive surface
+%%%
+% rules
+%
+
+% implies(+Premise,-Conclusion)
+%   From Premise follows the Conclusion.
+
+% - assert positive surface
 implies('<http://www.w3.org/2000/10/swap/log#onPositiveSurface>'(_, G), G).
 
-% blow inference fuse
+% - blow inference fuse
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         makevars(G, H, V),
@@ -200,7 +217,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#negativeTriple>'(A, T),
         catch(call(T), _, false)
         ), throw(inference_fuse('<http://www.w3.org/2000/10/swap/log#negativeTriple>'(A, T), T))).
 
-% simplify positive surface
+% - simplify positive surface
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
@@ -211,7 +228,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         conj_list(F, B)
         ), '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, F)).
 
-% simplify graffiti
+% - simplify graffiti
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         findvars(G, U),
@@ -224,7 +241,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         W \= V
         ), '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(W, G)).
 
-% simplify nested negative surfaces
+% - simplify nested negative surfaces
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
@@ -245,7 +262,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         append(V, W, U)
         ), '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(U, C)).
 
-% resolve paired negative surfaces
+% - resolve paired negative surfaces
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
@@ -283,7 +300,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         ground('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, H))
         ), '<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, H)).
 
-% create forward rule
+% - create forward rule
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
@@ -299,7 +316,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         makevars(S, I, W)
         ), implies(Q, I)).
 
-% create contrapositive rule
+% - create contrapositive rule
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
@@ -325,7 +342,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         makevars(S, I, W)
         ), implies(Q, I)).
 
-% create backward rule
+% - create backward rule
 implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         list_si(V),
         conj_list(G, L),
@@ -340,7 +357,7 @@ implies(('<http://www.w3.org/2000/10/swap/log#onNegativeSurface>'(V, G),
         makevars(':-'(T, S), C, U)
         ), C).
 
-% create query
+% - create query
 implies(('<http://www.w3.org/2000/10/swap/log#onQuerySurface>'(V, G),
         list_si(V),
         conj_list(G, L),
